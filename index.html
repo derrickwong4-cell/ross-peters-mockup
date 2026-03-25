@@ -1,0 +1,658 @@
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ross Peters | Functional Patterns Sydney</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Anton&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Manrope:wght@200;300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #1a1714;
+        --surface: #242019;
+        --surface-light: #2e2820;
+        --text: #F0EBE3;
+        --text-dim: rgba(240, 235, 227, 0.6);
+        --text-muted: rgba(240, 235, 227, 0.35);
+        --accent: #C47D2B;
+        --accent-light: #D4973F;
+        --accent-glow: rgba(196, 125, 43, 0.15);
+        --border: rgba(240, 235, 227, 0.08);
+      }
+
+      body {
+        background-color: var(--bg);
+        color: var(--text);
+        font-family: 'Manrope', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        cursor: none;
+      }
+
+      h1, h2, h3, h4, h5, .font-display {
+        font-family: 'Anton', sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+      }
+
+      .font-serif {
+        font-family: 'Cormorant Garamond', serif;
+        text-transform: none;
+        letter-spacing: -0.01em;
+      }
+
+      /* Noise texture */
+      .noise-overlay {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 50;
+        opacity: 0.06;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      }
+
+      /* Scroll reveal */
+      .reveal-text {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .reveal-text.active {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .reveal-img {
+        clip-path: inset(0 0 100% 0);
+        transition: clip-path 1.2s cubic-bezier(0.77, 0, 0.175, 1);
+      }
+      .reveal-img.active {
+        clip-path: inset(0 0 0 0);
+      }
+      .reveal-line {
+        transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .delay-100 { transition-delay: 100ms; }
+      .delay-200 { transition-delay: 200ms; }
+      .delay-300 { transition-delay: 300ms; }
+      .delay-400 { transition-delay: 400ms; }
+
+      /* Custom cursor */
+      .cursor-dot, .cursor-outline {
+        position: fixed;
+        top: 0; left: 0;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        z-index: 9999;
+        pointer-events: none;
+      }
+      .cursor-dot {
+        width: 8px;
+        height: 8px;
+        background-color: var(--accent);
+      }
+      .cursor-outline {
+        width: 40px;
+        height: 40px;
+        border: 1px solid rgba(196, 125, 43, 0.4);
+        transition: width 0.2s, height 0.2s, background-color 0.2s;
+      }
+      body.hovering .cursor-outline {
+        width: 60px;
+        height: 60px;
+        background-color: rgba(196, 125, 43, 0.08);
+        border-color: transparent;
+        backdrop-filter: blur(2px);
+      }
+
+      /* Hide scrollbar */
+      .hide-scroll::-webkit-scrollbar { display: none; }
+      .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+      /* Counter animation */
+      @keyframes countUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      /* Ambient breathing */
+      @keyframes breathe {
+        0%, 100% { opacity: 0.08; transform: scale(1); }
+        50% { opacity: 0.15; transform: scale(1.05); }
+      }
+
+      ::selection {
+        background: var(--accent);
+        color: var(--bg);
+      }
+    </style>
+  </head>
+
+  <body class="antialiased overflow-x-hidden">
+    <div class="noise-overlay"></div>
+    <div class="cursor-dot hidden md:block"></div>
+    <div class="cursor-outline hidden md:block"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-40 backdrop-blur-md bg-[#1a1714]/80 border-b border-[#F0EBE3]/5 transition-all duration-300">
+      <div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
+        <a href="#" class="font-display text-xl tracking-wider text-[#F0EBE3] hover-trigger">ROSS PETERS</a>
+
+        <div class="hidden md:flex items-center gap-10">
+          <a href="#method" class="text-sm font-light text-[#F0EBE3]/60 hover:text-[#C47D2B] transition-colors hover-trigger">Method</a>
+          <a href="#results" class="text-sm font-light text-[#F0EBE3]/60 hover:text-[#C47D2B] transition-colors hover-trigger">Results</a>
+          <a href="#about" class="text-sm font-light text-[#F0EBE3]/60 hover:text-[#C47D2B] transition-colors hover-trigger">About</a>
+          <a href="#contact" class="hover-trigger px-6 py-2.5 border border-[#C47D2B]/40 text-xs uppercase tracking-widest text-[#C47D2B] hover:bg-[#C47D2B] hover:text-[#1a1714] transition-all duration-300">
+            Book Session
+          </a>
+        </div>
+
+        <button class="md:hidden text-[#F0EBE3] hover-trigger">
+          <iconify-icon icon="solar:hamburger-menu-linear" width="24"></iconify-icon>
+        </button>
+      </div>
+    </nav>
+
+    <!-- HERO -->
+    <header class="relative min-h-screen flex items-end pb-16 md:pb-24 px-6 overflow-hidden">
+      <!-- Background gradient -->
+      <div class="absolute inset-0 bg-gradient-to-b from-[#1a1714] via-[#1a1714]/60 to-[#1a1714]"></div>
+
+      <!-- Abstract body silhouette placeholder -->
+      <div class="absolute inset-0 flex items-center justify-center opacity-[0.04]">
+        <div class="w-[600px] h-[800px] border border-[#F0EBE3]/20 rounded-full"></div>
+      </div>
+
+      <!-- Ambient glow -->
+      <div class="absolute top-1/4 right-1/4 w-[600px] h-[600px] bg-[#C47D2B] rounded-full mix-blend-normal filter blur-[200px] opacity-[0.06] animate-pulse"></div>
+      <div class="absolute bottom-0 left-1/3 w-[400px] h-[400px] bg-[#C47D2B] rounded-full filter blur-[150px]" style="opacity: 0.04; animation: breathe 8s ease-in-out infinite;"></div>
+
+      <div class="relative z-10 max-w-7xl w-full mx-auto">
+        <div class="reveal-text inline-flex items-center gap-2 px-3 py-1.5 bg-[#C47D2B]/8 border border-[#C47D2B]/15 text-[#C47D2B] text-xs uppercase tracking-[0.2em] mb-8">
+          <span class="w-1.5 h-1.5 rounded-full bg-[#C47D2B] animate-pulse"></span>
+          Functional Patterns &mdash; Sydney
+        </div>
+
+        <h1 class="text-7xl md:text-[9rem] lg:text-[11rem] leading-[0.85] text-[#F0EBE3] mb-8 reveal-text delay-100">
+          REDEFINE<br/>
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#C47D2B] to-[#D4973F]">HOW YOU</span><br/>
+          MOVE
+        </h1>
+
+        <div class="flex flex-col md:flex-row items-start md:items-end justify-between gap-12 border-t border-[#F0EBE3]/8 pt-8 mt-4">
+          <p class="max-w-lg text-lg md:text-xl text-[#F0EBE3]/60 font-light leading-relaxed reveal-text delay-200">
+            Most pain has a mechanical cause. Fix the mechanics, fix the pain. We use biomechanics-first training to correct how your body actually moves.
+          </p>
+
+          <div class="flex items-center gap-8 reveal-text delay-300">
+            <div class="text-center">
+              <span class="block font-display text-4xl text-[#C47D2B] counter" data-target="204">0</span>
+              <span class="text-xs uppercase tracking-widest text-[#F0EBE3]/35">Botany Rd</span>
+            </div>
+            <div class="w-px h-12 bg-[#F0EBE3]/10"></div>
+            <div class="text-center">
+              <span class="block font-display text-4xl text-[#F0EBE3]">Alexandria</span>
+              <span class="text-xs uppercase tracking-widest text-[#F0EBE3]/35">Sydney</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scroll indicator -->
+      <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-[#F0EBE3]/20">
+        <span class="text-[10px] uppercase tracking-[0.3em]">Scroll</span>
+        <div class="w-px h-8 bg-gradient-to-b from-[#F0EBE3]/20 to-transparent"></div>
+      </div>
+    </header>
+
+    <!-- PHILOSOPHY STRIP -->
+    <section class="py-6 bg-[#C47D2B] overflow-hidden">
+      <div class="flex animate-marquee whitespace-nowrap">
+        <span class="font-display text-lg tracking-[0.3em] text-[#1a1714] mx-12">BIOMECHANICS</span>
+        <span class="text-[#1a1714]/40 mx-4">&bull;</span>
+        <span class="font-display text-lg tracking-[0.3em] text-[#1a1714] mx-12">CORRECTIVE MOVEMENT</span>
+        <span class="text-[#1a1714]/40 mx-4">&bull;</span>
+        <span class="font-display text-lg tracking-[0.3em] text-[#1a1714] mx-12">PAIN RESOLUTION</span>
+        <span class="text-[#1a1714]/40 mx-4">&bull;</span>
+        <span class="font-display text-lg tracking-[0.3em] text-[#1a1714] mx-12">STRUCTURAL BALANCE</span>
+        <span class="text-[#1a1714]/40 mx-4">&bull;</span>
+        <span class="font-display text-lg tracking-[0.3em] text-[#1a1714] mx-12">GAIT RETRAINING</span>
+        <span class="text-[#1a1714]/40 mx-4">&bull;</span>
+        <span class="font-display text-lg tracking-[0.3em] text-[#1a1714] mx-12">BIOMECHANICS</span>
+        <span class="text-[#1a1714]/40 mx-4">&bull;</span>
+        <span class="font-display text-lg tracking-[0.3em] text-[#1a1714] mx-12">CORRECTIVE MOVEMENT</span>
+        <span class="text-[#1a1714]/40 mx-4">&bull;</span>
+        <span class="font-display text-lg tracking-[0.3em] text-[#1a1714] mx-12">PAIN RESOLUTION</span>
+        <span class="text-[#1a1714]/40 mx-4">&bull;</span>
+        <span class="font-display text-lg tracking-[0.3em] text-[#1a1714] mx-12">STRUCTURAL BALANCE</span>
+      </div>
+      <style>
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .animate-marquee {
+          animation: marquee 25s linear infinite;
+        }
+      </style>
+    </section>
+
+    <!-- WHAT IS FP -->
+    <section class="py-24 md:py-32 bg-[#F0EBE3] text-[#1a1714]">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="grid md:grid-cols-2 gap-16 lg:gap-24 items-start">
+          <!-- Left: sticky text -->
+          <div class="md:sticky md:top-32">
+            <span class="text-xs uppercase tracking-[0.2em] text-[#C47D2B] mb-4 block reveal-text">The Methodology</span>
+            <h2 class="text-5xl md:text-7xl text-[#1a1714] leading-[0.9] mb-6 reveal-text delay-100">
+              THE BODY<br/>
+              <span class="font-serif italic font-light text-[#1a1714]/40 normal-case text-4xl md:text-6xl">as one</span><br/>
+              SYSTEM
+            </h2>
+            <div class="h-px w-0 bg-[#C47D2B] mb-8 reveal-line"></div>
+            <p class="text-lg text-[#1a1714]/70 leading-relaxed reveal-text delay-200">
+              Functional Patterns is a biomechanics-based training system founded by Naudi Aguilar. Instead of treating where it hurts, FP traces pain back to the mechanical fault causing it. We study how the human body moves at its best, then correct what's off.
+            </p>
+          </div>
+
+          <!-- Right: staggered cards -->
+          <div class="space-y-8">
+            <div class="group bg-white border-2 border-[#1a1714] p-8 hover:shadow-[8px_8px_0px_0px_rgba(196,125,43,1)] transition-all duration-300 reveal-text">
+              <span class="font-display text-5xl text-[#1a1714]/10 block mb-2 group-hover:text-[#C47D2B]/20 transition-colors">01</span>
+              <h3 class="font-display text-2xl text-[#1a1714] mb-3">ASSESS YOUR STRUCTURE</h3>
+              <p class="text-[#1a1714]/60">We analyze your posture, gait, and movement patterns to identify the dysfunctions causing pain, restriction, or imbalance.</p>
+            </div>
+
+            <div class="group bg-white border-2 border-[#1a1714] p-8 hover:shadow-[8px_8px_0px_0px_rgba(196,125,43,1)] transition-all duration-300 reveal-text delay-100 md:ml-8">
+              <span class="font-display text-5xl text-[#1a1714]/10 block mb-2 group-hover:text-[#C47D2B]/20 transition-colors">02</span>
+              <h3 class="font-display text-2xl text-[#1a1714] mb-3">CORRECTIVE TRAINING</h3>
+              <p class="text-[#1a1714]/60">FP retrains your body through four fundamental human movements: standing, walking, running, and throwing. Everything else is built on top of these.</p>
+            </div>
+
+            <div class="group bg-white border-2 border-[#1a1714] p-8 hover:shadow-[8px_8px_0px_0px_rgba(196,125,43,1)] transition-all duration-300 reveal-text delay-200 md:ml-4">
+              <span class="font-display text-5xl text-[#1a1714]/10 block mb-2 group-hover:text-[#C47D2B]/20 transition-colors">03</span>
+              <h3 class="font-display text-2xl text-[#1a1714] mb-3">LASTING RESULTS</h3>
+              <p class="text-[#1a1714]/60">Clients walk out of here standing taller, moving easier, and hurting less. These aren't band-aid fixes. They're structural corrections that hold up months and years later.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESULTS / TRANSFORMATIONS -->
+    <section id="results" class="py-24 md:py-32 bg-[#1a1714] border-t border-[#F0EBE3]/5 relative overflow-hidden">
+      <!-- Ambient light -->
+      <div class="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[#C47D2B] rounded-full filter blur-[200px] opacity-[0.04]"></div>
+
+      <div class="max-w-7xl mx-auto px-6 relative z-10">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-20">
+          <div>
+            <span class="text-xs uppercase tracking-[0.2em] text-[#C47D2B] mb-4 block reveal-text">Client Outcomes</span>
+            <h2 class="text-5xl md:text-8xl text-[#F0EBE3] leading-[0.9] reveal-text delay-100">
+              REAL<br/>RESULTS
+            </h2>
+          </div>
+          <p class="text-lg text-[#F0EBE3]/50 max-w-md mt-6 md:mt-0 reveal-text delay-200">
+            Before and after photos don't lie. These are real clients
+            who trained at FP Sydney and walked away different.
+          </p>
+        </div>
+
+        <!-- Results grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Result 1 -->
+          <div class="group relative aspect-[3/4] overflow-hidden reveal-img hover-trigger">
+            <div class="absolute inset-0 bg-[#242019]">
+              <div class="w-full h-full bg-gradient-to-br from-[#2e2820] to-[#1a1714] flex items-center justify-center">
+                <div class="text-center">
+                  <div class="w-20 h-20 mx-auto mb-4 border border-[#C47D2B]/20 rounded-full flex items-center justify-center">
+                    <iconify-icon icon="solar:body-linear" width="32" class="text-[#C47D2B]/40"></iconify-icon>
+                  </div>
+                  <span class="text-xs uppercase tracking-widest text-[#F0EBE3]/20">Before / After</span>
+                </div>
+              </div>
+            </div>
+            <div class="absolute inset-0 bg-gradient-to-t from-[#1a1714] via-transparent to-transparent opacity-90"></div>
+            <div class="absolute bottom-0 left-0 p-8 w-full">
+              <span class="text-[#C47D2B] text-xs tracking-widest uppercase">12 Weeks</span>
+              <h3 class="font-display text-2xl text-[#F0EBE3] mt-1">CHRONIC BACK PAIN</h3>
+              <p class="text-[#F0EBE3]/50 mt-2 text-sm">Pain-free after 15 years of chronic dysfunction, without surgery or medication.</p>
+            </div>
+          </div>
+
+          <!-- Result 2 -->
+          <div class="group relative aspect-[3/4] overflow-hidden md:mt-12 reveal-img delay-100 hover-trigger">
+            <div class="absolute inset-0 bg-[#242019]">
+              <div class="w-full h-full bg-gradient-to-br from-[#2e2820] to-[#1a1714] flex items-center justify-center">
+                <div class="text-center">
+                  <div class="w-20 h-20 mx-auto mb-4 border border-[#C47D2B]/20 rounded-full flex items-center justify-center">
+                    <iconify-icon icon="solar:running-2-linear" width="32" class="text-[#C47D2B]/40"></iconify-icon>
+                  </div>
+                  <span class="text-xs uppercase tracking-widest text-[#F0EBE3]/20">Before / After</span>
+                </div>
+              </div>
+            </div>
+            <div class="absolute inset-0 bg-gradient-to-t from-[#1a1714] via-transparent to-transparent opacity-90"></div>
+            <div class="absolute bottom-0 left-0 p-8 w-full">
+              <span class="text-[#C47D2B] text-xs tracking-widest uppercase">8 Weeks</span>
+              <h3 class="font-display text-2xl text-[#F0EBE3] mt-1">POSTURAL CORRECTION</h3>
+              <p class="text-[#F0EBE3]/50 mt-2 text-sm">Forward head posture and rounded shoulders corrected through gait retraining.</p>
+            </div>
+          </div>
+
+          <!-- Result 3 -->
+          <div class="group relative aspect-[3/4] overflow-hidden reveal-img delay-200 hover-trigger">
+            <div class="absolute inset-0 bg-[#242019]">
+              <div class="w-full h-full bg-gradient-to-br from-[#2e2820] to-[#1a1714] flex items-center justify-center">
+                <div class="text-center">
+                  <div class="w-20 h-20 mx-auto mb-4 border border-[#C47D2B]/20 rounded-full flex items-center justify-center">
+                    <iconify-icon icon="solar:health-linear" width="32" class="text-[#C47D2B]/40"></iconify-icon>
+                  </div>
+                  <span class="text-xs uppercase tracking-widest text-[#F0EBE3]/20">Before / After</span>
+                </div>
+              </div>
+            </div>
+            <div class="absolute inset-0 bg-gradient-to-t from-[#1a1714] via-transparent to-transparent opacity-90"></div>
+            <div class="absolute bottom-0 left-0 p-8 w-full">
+              <span class="text-[#C47D2B] text-xs tracking-widest uppercase">16 Weeks</span>
+              <h3 class="font-display text-2xl text-[#F0EBE3] mt-1">KNEE REHABILITATION</h3>
+              <p class="text-[#F0EBE3]/50 mt-2 text-sm">Full knee function restored by addressing hip and ankle mechanics upstream.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats strip -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mt-20 pt-12 border-t border-[#F0EBE3]/8">
+          <div class="reveal-text">
+            <span class="font-display text-4xl md:text-5xl text-[#C47D2B] block counter" data-target="100">0</span>
+            <span class="text-xs uppercase tracking-widest text-[#F0EBE3]/35 mt-1 block">Clients Trained</span>
+          </div>
+          <div class="reveal-text delay-100">
+            <span class="font-display text-4xl md:text-5xl text-[#F0EBE3] block">HBS</span>
+            <span class="text-xs uppercase tracking-widest text-[#F0EBE3]/35 mt-1 block">Certified Level 1</span>
+          </div>
+          <div class="reveal-text delay-200">
+            <span class="font-display text-4xl md:text-5xl text-[#F0EBE3] block counter" data-target="12">0</span>
+            <span class="text-xs uppercase tracking-widest text-[#F0EBE3]/35 mt-1 block">Practitioners on Team</span>
+          </div>
+          <div class="reveal-text delay-300">
+            <span class="font-display text-4xl md:text-5xl text-[#C47D2B] block">FP</span>
+            <span class="text-xs uppercase tracking-widest text-[#F0EBE3]/35 mt-1 block">Sydney Studio</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABOUT ROSS -->
+    <section id="about" class="py-24 md:py-32 bg-[#242019] border-t border-[#F0EBE3]/5 relative overflow-hidden">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="grid md:grid-cols-12 gap-12 lg:gap-20 items-center">
+          <!-- Portrait placeholder -->
+          <div class="md:col-span-5 relative">
+            <div class="relative w-full aspect-[3/4] bg-[#2e2820] overflow-hidden reveal-img">
+              <div class="w-full h-full bg-gradient-to-br from-[#2e2820] to-[#1a1714] flex items-center justify-center">
+                <div class="text-center">
+                  <div class="w-32 h-32 mx-auto mb-6 border-2 border-[#C47D2B]/20 rounded-full flex items-center justify-center">
+                    <iconify-icon icon="solar:user-circle-linear" width="64" class="text-[#C47D2B]/30"></iconify-icon>
+                  </div>
+                  <span class="text-xs uppercase tracking-widest text-[#F0EBE3]/20">Portrait Photo</span>
+                </div>
+              </div>
+              <div class="absolute inset-0 bg-gradient-to-t from-[#242019] via-transparent to-transparent"></div>
+            </div>
+            <!-- Floating badge -->
+            <div class="absolute -bottom-6 -right-6 bg-[#C47D2B] text-[#1a1714] p-6 md:p-8 max-w-xs shadow-2xl reveal-text delay-300 z-20">
+              <p class="font-serif italic text-2xl leading-tight">
+                "Your body isn't broken. It just hasn't been taught to move correctly."
+              </p>
+            </div>
+          </div>
+
+          <!-- Bio -->
+          <div class="md:col-span-7 space-y-8">
+            <span class="text-xs uppercase tracking-[0.2em] text-[#C47D2B] block reveal-text">About</span>
+            <h2 class="text-5xl md:text-7xl text-[#F0EBE3] leading-[0.9] reveal-text delay-100">
+              ROSS<br/>PETERS
+            </h2>
+            <div class="h-px w-0 bg-[#C47D2B] reveal-line"></div>
+            <p class="text-lg text-[#F0EBE3]/60 leading-relaxed reveal-text delay-200">
+              HBS Level 1 certified Functional Patterns practitioner based in Alexandria, Sydney. He trains out of FP Sydney alongside a 12-person team led by Shannon Hegarty (HBS Level 4).
+            </p>
+            <p class="text-lg text-[#F0EBE3]/60 leading-relaxed reveal-text delay-300">
+              Ross works with people stuck in cycles of chronic pain and poor posture that physio and chiro haven't fixed. His process is direct: assess your structure, find the mechanical fault, then retrain how you move until the problem's gone.
+            </p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
+              <div class="border-l-4 border-[#C47D2B] pl-6 reveal-text delay-200">
+                <h4 class="font-display text-xl text-[#F0EBE3] mb-1">FP SYDNEY</h4>
+                <p class="text-sm text-[#F0EBE3]/40">204-218 Botany Rd, Alexandria</p>
+              </div>
+              <div class="border-l-4 border-[#C47D2B] pl-6 reveal-text delay-300">
+                <h4 class="font-display text-xl text-[#F0EBE3] mb-1">SPECIALIZATION</h4>
+                <p class="text-sm text-[#F0EBE3]/40">Pain resolution, postural correction, gait retraining</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TESTIMONIAL -->
+    <section class="py-32 px-6 bg-[#C47D2B] text-[#1a1714] relative overflow-hidden">
+      <!-- Subtle texture -->
+      <div class="absolute inset-0 opacity-[0.03]" style="background-image: radial-gradient(#1a1714 1px, transparent 1px); background-size: 30px 30px;"></div>
+
+      <div class="max-w-4xl mx-auto text-center relative z-10 reveal-text">
+        <iconify-icon icon="solar:quote-up-square-linear" width="48" class="mx-auto mb-8 text-[#1a1714]/30"></iconify-icon>
+        <h2 class="font-serif italic text-4xl md:text-6xl leading-tight mb-8 font-light normal-case">
+          "I spent years in physio and chiro with no lasting change.
+          Three months with Ross and I'm pain-free for the first time in a decade."
+        </h2>
+        <div class="flex items-center justify-center gap-4">
+          <div class="w-12 h-px bg-[#1a1714]/30"></div>
+          <span class="text-sm font-medium uppercase tracking-widest">Client, Alexandria</span>
+          <div class="w-12 h-px bg-[#1a1714]/30"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WHAT FP IS NOT -->
+    <section id="method" class="py-24 md:py-32 bg-[#1a1714] border-t border-[#F0EBE3]/5">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="text-center mb-20">
+          <span class="text-xs uppercase tracking-[0.2em] text-[#C47D2B] mb-4 block reveal-text">What Sets FP Apart</span>
+          <h2 class="text-5xl md:text-7xl text-[#F0EBE3] reveal-text delay-100">
+            WHY MOST TRAINING<br/>
+            <span class="font-serif italic font-light normal-case text-4xl md:text-6xl text-[#F0EBE3]/40">makes things worse</span>
+          </h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+          <!-- What it's NOT -->
+          <div class="bg-[#242019] border border-[#F0EBE3]/8 p-8 md:p-10 reveal-text hover-trigger group hover:border-[#F0EBE3]/15 transition-colors">
+            <h3 class="font-display text-2xl text-[#F0EBE3]/40 mb-8 group-hover:text-[#F0EBE3]/60 transition-colors">TRADITIONAL FITNESS</h3>
+            <ul class="space-y-5">
+              <li class="flex items-start gap-4">
+                <iconify-icon icon="solar:close-circle-linear" width="20" class="text-red-400/60 mt-1 shrink-0"></iconify-icon>
+                <span class="text-[#F0EBE3]/50">Isolates muscles in unnatural patterns</span>
+              </li>
+              <li class="flex items-start gap-4">
+                <iconify-icon icon="solar:close-circle-linear" width="20" class="text-red-400/60 mt-1 shrink-0"></iconify-icon>
+                <span class="text-[#F0EBE3]/50">Treats symptoms, not root causes</span>
+              </li>
+              <li class="flex items-start gap-4">
+                <iconify-icon icon="solar:close-circle-linear" width="20" class="text-red-400/60 mt-1 shrink-0"></iconify-icon>
+                <span class="text-[#F0EBE3]/50">Generic programs for everyone</span>
+              </li>
+              <li class="flex items-start gap-4">
+                <iconify-icon icon="solar:close-circle-linear" width="20" class="text-red-400/60 mt-1 shrink-0"></iconify-icon>
+                <span class="text-[#F0EBE3]/50">Progress measured by reps and weight</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- What it IS -->
+          <div class="bg-[#242019] border border-[#C47D2B]/20 p-8 md:p-10 reveal-text delay-100 hover-trigger group hover:border-[#C47D2B]/40 transition-colors relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-[#C47D2B] rounded-full filter blur-[80px] opacity-[0.08]"></div>
+            <h3 class="font-display text-2xl text-[#C47D2B] mb-8 relative z-10">FUNCTIONAL PATTERNS</h3>
+            <ul class="space-y-5 relative z-10">
+              <li class="flex items-start gap-4">
+                <iconify-icon icon="solar:check-circle-linear" width="20" class="text-[#C47D2B] mt-1 shrink-0"></iconify-icon>
+                <span class="text-[#F0EBE3]/80">Trains the body as an integrated system</span>
+              </li>
+              <li class="flex items-start gap-4">
+                <iconify-icon icon="solar:check-circle-linear" width="20" class="text-[#C47D2B] mt-1 shrink-0"></iconify-icon>
+                <span class="text-[#F0EBE3]/80">Addresses root biomechanical dysfunction</span>
+              </li>
+              <li class="flex items-start gap-4">
+                <iconify-icon icon="solar:check-circle-linear" width="20" class="text-[#C47D2B] mt-1 shrink-0"></iconify-icon>
+                <span class="text-[#F0EBE3]/80">Individualized assessment and correction</span>
+              </li>
+              <li class="flex items-start gap-4">
+                <iconify-icon icon="solar:check-circle-linear" width="20" class="text-[#C47D2B] mt-1 shrink-0"></iconify-icon>
+                <span class="text-[#F0EBE3]/80">Progress measured by movement quality</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA / CONTACT -->
+    <section id="contact" class="py-24 md:py-32 bg-[#242019] border-t border-[#F0EBE3]/5 relative overflow-hidden">
+      <div class="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[#C47D2B] rounded-full filter blur-[200px] opacity-[0.05]"></div>
+
+      <div class="max-w-4xl mx-auto px-6 text-center relative z-10">
+        <span class="text-xs uppercase tracking-[0.2em] text-[#C47D2B] mb-4 block reveal-text">Get Started</span>
+        <h2 class="text-5xl md:text-8xl text-[#F0EBE3] leading-[0.9] mb-8 reveal-text delay-100">
+          STOP MANAGING<br/>
+          <span class="font-serif italic font-light normal-case text-4xl md:text-7xl text-[#F0EBE3]/40">start fixing</span>
+        </h2>
+        <p class="text-lg text-[#F0EBE3]/50 max-w-2xl mx-auto mb-12 reveal-text delay-200">
+          If you've tried physio, chiro, massage, and you're still in pain, the problem isn't effort. It's method. One session is enough to see the difference.
+        </p>
+
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 reveal-text delay-300">
+          <a href="#" class="hover-trigger group px-10 py-4 bg-[#C47D2B] text-[#1a1714] font-display text-lg tracking-wider hover:bg-[#F0EBE3] transition-colors duration-300 flex items-center gap-3">
+            BOOK YOUR FIRST SESSION
+            <iconify-icon icon="solar:arrow-right-linear" width="20" class="group-hover:translate-x-2 transition-transform"></iconify-icon>
+          </a>
+          <a href="#" class="hover-trigger px-10 py-4 border border-[#F0EBE3]/20 text-[#F0EBE3] font-display text-lg tracking-wider hover:border-[#F0EBE3]/60 transition-colors duration-300">
+            ASK A QUESTION
+          </a>
+        </div>
+
+        <div class="flex items-center justify-center gap-6 mt-12 reveal-text delay-400">
+          <a href="#" class="hover-trigger w-10 h-10 border border-[#F0EBE3]/15 flex items-center justify-center hover:bg-[#C47D2B] hover:text-[#1a1714] hover:border-[#C47D2B] transition-all">
+            <iconify-icon icon="mdi:instagram" width="20"></iconify-icon>
+          </a>
+          <a href="#" class="hover-trigger w-10 h-10 border border-[#F0EBE3]/15 flex items-center justify-center hover:bg-[#C47D2B] hover:text-[#1a1714] hover:border-[#C47D2B] transition-all">
+            <iconify-icon icon="solar:letter-linear" width="20"></iconify-icon>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="bg-[#1a1714] text-[#F0EBE3] pt-16 pb-8 border-t border-[#F0EBE3]/5">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="grid md:grid-cols-3 gap-12 mb-16">
+          <div>
+            <h3 class="font-display text-2xl mb-4">ROSS PETERS</h3>
+            <p class="text-[#F0EBE3]/40 text-sm leading-relaxed">
+              Functional Patterns practitioner. HBS Level 1 certified.<br/>
+              Based at FP Sydney, Alexandria.
+            </p>
+          </div>
+
+          <div>
+            <h4 class="text-xs uppercase tracking-widest text-[#C47D2B] mb-4">Location</h4>
+            <p class="text-[#F0EBE3]/40 text-sm leading-relaxed">
+              FP Sydney<br/>
+              204-218 Botany Rd<br/>
+              Alexandria, Sydney 2015
+            </p>
+          </div>
+
+          <div>
+            <h4 class="text-xs uppercase tracking-widest text-[#C47D2B] mb-4">Connect</h4>
+            <ul class="space-y-2">
+              <li><a href="#" class="text-[#F0EBE3]/40 hover:text-[#C47D2B] text-sm transition-colors hover-trigger">@rosspeters_</a></li>
+              <li><a href="#" class="text-[#F0EBE3]/40 hover:text-[#C47D2B] text-sm transition-colors hover-trigger">ross@fpsydney.com.au</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-[#F0EBE3]/5">
+          <p class="text-[#F0EBE3]/20 text-xs">&copy; 2026 Ross Peters. Functional Patterns Sydney.</p>
+          <p class="text-[#F0EBE3]/20 text-xs mt-2 md:mt-0">Built by <a href="#" class="text-[#C47D2B]/40 hover:text-[#C47D2B] transition-colors hover-trigger">Pilar Built</a></p>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      // Custom cursor
+      const cursorDot = document.querySelector('.cursor-dot');
+      const cursorOutline = document.querySelector('.cursor-outline');
+      const hoverTriggers = document.querySelectorAll('.hover-trigger');
+
+      window.addEventListener('mousemove', (e) => {
+        cursorDot.style.left = `${e.clientX}px`;
+        cursorDot.style.top = `${e.clientY}px`;
+        cursorOutline.animate({
+          left: `${e.clientX}px`,
+          top: `${e.clientY}px`,
+        }, { duration: 500, fill: 'forwards' });
+      });
+
+      hoverTriggers.forEach((trigger) => {
+        trigger.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+        trigger.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+      });
+
+      // Scroll reveal
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('active');
+            if (entry.target.classList.contains('reveal-line')) {
+              entry.target.style.width = '96px';
+            }
+          }
+        });
+      }, { threshold: 0.1 });
+
+      document.querySelectorAll('.reveal-text, .reveal-img, .reveal-line').forEach((el) => {
+        observer.observe(el);
+      });
+
+      // Counter animation
+      const counterObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const el = entry.target;
+            const target = parseInt(el.dataset.target);
+            let current = 0;
+            const increment = target / 40;
+            const timer = setInterval(() => {
+              current += increment;
+              if (current >= target) {
+                el.textContent = target + '+';
+                clearInterval(timer);
+              } else {
+                el.textContent = Math.floor(current);
+              }
+            }, 30);
+            counterObserver.unobserve(el);
+          }
+        });
+      }, { threshold: 0.5 });
+
+      document.querySelectorAll('.counter').forEach((el) => counterObserver.observe(el));
+    </script>
+  </body>
+</html>
